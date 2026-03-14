@@ -31,6 +31,14 @@
       overflow-x: hidden;
     }
 
+    /* ── particle canvas ── */
+    #particleCanvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
     /* ── animated mesh background ── */
     body::before {
       content: '';
@@ -76,10 +84,49 @@
       gap: 20px;
     }
 
-    /* ── main card ── */
-    .card {
+    /* ── 3D scene wrapper ── */
+    .card-scene {
       width: 100%;
       max-width: 390px;
+      perspective: 1100px;
+      perspective-origin: 50% 35%;
+    }
+
+    /* ── 3D transform wrapper ── */
+    .card-3d {
+      width: 100%;
+      transform-style: preserve-3d;
+      animation: cardReveal 1.4s cubic-bezier(.22,1,.36,1) both;
+      animation-delay: 0.15s;
+      will-change: transform;
+      transition: transform 0.12s ease-out;
+    }
+
+    @keyframes cardReveal {
+      0% {
+        opacity: 0;
+        transform: rotateX(72deg) rotateY(-12deg) translateZ(-160px) scale(0.8);
+        filter: blur(8px);
+      }
+      55% {
+        opacity: 1;
+        transform: rotateX(-6deg) rotateY(4deg) translateZ(24px) scale(1.03);
+        filter: blur(0px);
+      }
+      75% {
+        transform: rotateX(3deg) rotateY(-2deg) translateZ(4px) scale(0.99);
+      }
+      100% {
+        opacity: 1;
+        transform: rotateX(0deg) rotateY(0deg) translateZ(0px) scale(1);
+        filter: blur(0px);
+      }
+    }
+
+    /* ── main card ── */
+    .card {
+      position: relative;
+      width: 100%;
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 28px;
@@ -89,13 +136,72 @@
       box-shadow:
         0 0 0 1px rgba(255,255,255,.06) inset,
         0 40px 80px rgba(0,0,0,.5),
-        0 0 80px rgba(124,106,247,.08);
-      animation: cardIn .6s cubic-bezier(.22,1,.36,1) both;
+        0 0 80px rgba(124,106,247,.12),
+        0 0 140px rgba(124,106,247,.06);
+      overflow: hidden;
+      animation: cardGlow 3s ease-in-out 1.8s both;
     }
 
-    @keyframes cardIn {
-      from { opacity: 0; transform: translateY(32px) scale(.97); }
-      to   { opacity: 1; transform: none; }
+    @keyframes cardGlow {
+      0%   { box-shadow: 0 0 0 1px rgba(255,255,255,.06) inset, 0 40px 80px rgba(0,0,0,.5), 0 0 80px rgba(124,106,247,.12); }
+      50%  { box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset, 0 40px 80px rgba(0,0,0,.5), 0 0 120px rgba(124,106,247,.28), 0 0 60px rgba(240,98,146,.15); }
+      100% { box-shadow: 0 0 0 1px rgba(255,255,255,.06) inset, 0 40px 80px rgba(0,0,0,.5), 0 0 80px rgba(124,106,247,.12); }
+    }
+
+    /* ── holographic shimmer overlay ── */
+    .holo {
+      position: absolute;
+      inset: 0;
+      border-radius: 28px;
+      pointer-events: none;
+      z-index: 10;
+      opacity: 0;
+      background: linear-gradient(
+        115deg,
+        transparent 0%,
+        transparent 30%,
+        rgba(255,255,255,0.04) 38%,
+        rgba(124,106,247,0.18) 42%,
+        rgba(56,189,248,0.14) 46%,
+        rgba(240,98,146,0.16) 50%,
+        rgba(124,106,247,0.10) 54%,
+        rgba(255,255,255,0.04) 58%,
+        transparent 66%,
+        transparent 100%
+      );
+      background-size: 250% 250%;
+      transition: opacity 0.3s;
+      animation: holoSweep 5s ease-in-out 2s infinite;
+    }
+
+    .card-3d:hover .holo,
+    .card-3d.tilting .holo {
+      opacity: 1;
+    }
+
+    @keyframes holoSweep {
+      0%   { background-position: 200% 50%; opacity: 0; }
+      15%  { opacity: 1; }
+      50%  { background-position: -50% 50%; opacity: 1; }
+      85%  { opacity: 0; }
+      100% { background-position: -50% 50%; opacity: 0; }
+    }
+
+    /* ── edge glow (3D depth illusion) ── */
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 28px;
+      background: linear-gradient(
+        135deg,
+        rgba(255,255,255,0.07) 0%,
+        transparent 40%,
+        transparent 60%,
+        rgba(0,0,0,0.15) 100%
+      );
+      pointer-events: none;
+      z-index: 1;
     }
 
     /* ── avatar ── */
@@ -294,7 +400,13 @@
       cursor: pointer;
       box-shadow: 0 8px 30px rgba(124,106,247,.35);
       transition: transform .15s, box-shadow .2s, opacity .2s;
-      animation: cardIn .6s .15s cubic-bezier(.22,1,.36,1) both;
+      opacity: 0;
+      animation: fadeUp .6s cubic-bezier(.22,1,.36,1) 1.3s forwards;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     .btn-save:hover, .btn-save:active {
@@ -309,7 +421,21 @@
       color: rgba(255,255,255,.2);
       text-align: center;
       letter-spacing: .06em;
+      opacity: 0;
+      animation: fadeUp .5s ease 1.5s forwards;
     }
+
+    /* ── gyro hint ── */
+    .gyro-hint {
+      font-size: 11px;
+      color: rgba(255,255,255,.18);
+      text-align: center;
+      letter-spacing: .06em;
+      opacity: 0;
+      animation: fadeUp .5s ease 1.7s forwards;
+      display: none;
+    }
+    .gyro-hint.visible { display: block; }
 
     /* ── ripple ── */
     .ripple {
@@ -351,90 +477,113 @@
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
+
+    /* ── intro flash ── */
+    .intro-flash {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 40% at 50% 50%, rgba(124,106,247,.35), transparent 70%);
+      z-index: 50;
+      pointer-events: none;
+      animation: introFlash 1.2s ease-out 0.1s both;
+    }
+
+    @keyframes introFlash {
+      0%   { opacity: 0; }
+      30%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
   </style>
 </head>
 <body>
 
+<canvas id="particleCanvas"></canvas>
+<div class="intro-flash"></div>
+
 <div class="page">
 
   <!-- ── MAIN CARD ── -->
-  <div class="card">
+  <div class="card-scene">
+    <div class="card-3d" id="card3d">
+      <div class="card">
+        <div class="holo" id="holo"></div>
 
-    <!-- Avatar -->
-    <div class="avatar-wrap">
-      <div class="avatar-ring"></div>
-      <div class="avatar" id="avatarInitials">YN</div>
-    </div>
-
-    <!-- Name & Title -->
-    <h1 class="name">Your Name</h1>
-    <p class="title">Software Engineer &amp; Designer</p>
-    <p class="bio">Building products people love ✦ Tokyo, Japan</p>
-
-    <!-- Skills -->
-    <div class="tags">
-      <span class="tag">TypeScript</span>
-      <span class="tag">React</span>
-      <span class="tag">Node.js</span>
-      <span class="tag">Design</span>
-      <span class="tag">AI/ML</span>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Contacts -->
-    <div class="contacts">
-
-      <a class="contact-item" href="mailto:hello@example.com">
-        <div class="contact-icon mail">✉️</div>
-        <div class="contact-text">
-          <div class="contact-label">Email</div>
-          <div class="contact-value">hello@example.com</div>
+        <!-- Avatar -->
+        <div class="avatar-wrap">
+          <div class="avatar-ring"></div>
+          <div class="avatar" id="avatarInitials">YN</div>
         </div>
-        <span class="contact-arrow">›</span>
-      </a>
 
-      <a class="contact-item" href="tel:+819012345678">
-        <div class="contact-icon tel">📱</div>
-        <div class="contact-text">
-          <div class="contact-label">Phone</div>
-          <div class="contact-value">090-1234-5678</div>
-        </div>
-        <span class="contact-arrow">›</span>
-      </a>
+        <!-- Name & Title -->
+        <h1 class="name">Your Name</h1>
+        <p class="title">Software Engineer &amp; Designer</p>
+        <p class="bio">Building products people love ✦ Tokyo, Japan</p>
 
-      <a class="contact-item" href="https://example.com" target="_blank" rel="noopener">
-        <div class="contact-icon web">🌐</div>
-        <div class="contact-text">
-          <div class="contact-label">Website</div>
-          <div class="contact-value">example.com</div>
+        <!-- Skills -->
+        <div class="tags">
+          <span class="tag">TypeScript</span>
+          <span class="tag">React</span>
+          <span class="tag">Node.js</span>
+          <span class="tag">Design</span>
+          <span class="tag">AI/ML</span>
         </div>
-        <span class="contact-arrow">›</span>
-      </a>
 
-      <a class="contact-item" href="https://x.com/yourhandle" target="_blank" rel="noopener">
-        <div class="contact-icon x">𝕏</div>
-        <div class="contact-text">
-          <div class="contact-label">X (Twitter)</div>
-          <div class="contact-value">@yourhandle</div>
-        </div>
-        <span class="contact-arrow">›</span>
-      </a>
+        <div class="divider"></div>
 
-      <a class="contact-item" href="https://github.com/yourhandle" target="_blank" rel="noopener">
-        <div class="contact-icon github">
-          <!-- GitHub SVG icon -->
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:#fff">
-            <path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.184 6.839 9.504.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844a9.59 9.59 0 012.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.2 22 16.447 22 12.021 22 6.484 17.522 2 12 2z"/>
-          </svg>
-        </div>
-        <div class="contact-text">
-          <div class="contact-label">GitHub</div>
-          <div class="contact-value">yourhandle</div>
-        </div>
-        <span class="contact-arrow">›</span>
-      </a>
+        <!-- Contacts -->
+        <div class="contacts">
 
+          <a class="contact-item" href="mailto:hello@example.com">
+            <div class="contact-icon mail">✉️</div>
+            <div class="contact-text">
+              <div class="contact-label">Email</div>
+              <div class="contact-value">hello@example.com</div>
+            </div>
+            <span class="contact-arrow">›</span>
+          </a>
+
+          <a class="contact-item" href="tel:+819012345678">
+            <div class="contact-icon tel">📱</div>
+            <div class="contact-text">
+              <div class="contact-label">Phone</div>
+              <div class="contact-value">090-1234-5678</div>
+            </div>
+            <span class="contact-arrow">›</span>
+          </a>
+
+          <a class="contact-item" href="https://example.com" target="_blank" rel="noopener">
+            <div class="contact-icon web">🌐</div>
+            <div class="contact-text">
+              <div class="contact-label">Website</div>
+              <div class="contact-value">example.com</div>
+            </div>
+            <span class="contact-arrow">›</span>
+          </a>
+
+          <a class="contact-item" href="https://x.com/yourhandle" target="_blank" rel="noopener">
+            <div class="contact-icon x">𝕏</div>
+            <div class="contact-text">
+              <div class="contact-label">X (Twitter)</div>
+              <div class="contact-value">@yourhandle</div>
+            </div>
+            <span class="contact-arrow">›</span>
+          </a>
+
+          <a class="contact-item" href="https://github.com/yourhandle" target="_blank" rel="noopener">
+            <div class="contact-icon github">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:#fff">
+                <path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.184 6.839 9.504.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844a9.59 9.59 0 012.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.2 22 16.447 22 12.021 22 6.484 17.522 2 12 2z"/>
+              </svg>
+            </div>
+            <div class="contact-text">
+              <div class="contact-label">GitHub</div>
+              <div class="contact-value">yourhandle</div>
+            </div>
+            <span class="contact-arrow">›</span>
+          </a>
+
+        </div>
+      </div>
     </div>
   </div>
 
@@ -448,6 +597,7 @@
   </button>
 
   <p class="footer">TAP TO CONNECT · NFC ENABLED</p>
+  <p class="gyro-hint" id="gyroHint">端末を傾けてカードを動かせます</p>
 
 </div>
 
@@ -455,7 +605,179 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  /* ── ripple on tap ── */
+  /* ══════════════════════════════════
+     PARTICLE CANVAS
+  ══════════════════════════════════ */
+  (function() {
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [];
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const COLORS = ['rgba(124,106,247,', 'rgba(240,98,146,', 'rgba(56,189,248,'];
+
+    function Particle() {
+      this.reset();
+    }
+    Particle.prototype.reset = function() {
+      this.x    = Math.random() * W;
+      this.y    = Math.random() * H;
+      this.r    = Math.random() * 1.6 + 0.4;
+      this.vx   = (Math.random() - .5) * 0.25;
+      this.vy   = (Math.random() - .5) * 0.25 - 0.1;
+      this.life = 0;
+      this.maxLife = Math.random() * 300 + 200;
+      this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    };
+    Particle.prototype.update = function() {
+      this.x += this.vx;
+      this.y += this.vy;
+      this.life++;
+      if (this.life > this.maxLife) this.reset();
+    };
+    Particle.prototype.draw = function() {
+      const alpha = Math.sin(Math.PI * this.life / this.maxLife) * 0.55;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+      ctx.fillStyle = this.color + alpha + ')';
+      ctx.fill();
+    };
+
+    for (let i = 0; i < 60; i++) {
+      const p = new Particle();
+      p.life = Math.random() * p.maxLife; // stagger start
+      particles.push(p);
+    }
+
+    function loop() {
+      ctx.clearRect(0, 0, W, H);
+      particles.forEach(p => { p.update(); p.draw(); });
+      requestAnimationFrame(loop);
+    }
+    loop();
+  })();
+
+  /* ══════════════════════════════════
+     3D TILT — MOUSE (desktop)
+  ══════════════════════════════════ */
+  const card3d = document.getElementById('card3d');
+  let gyroActive = false;
+  let currentRX = 0, currentRY = 0;
+  let targetRX  = 0, targetRY  = 0;
+  let rafId;
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function animateTilt() {
+    currentRX = lerp(currentRX, targetRX, 0.1);
+    currentRY = lerp(currentRY, targetRY, 0.1);
+    card3d.style.transform =
+      `rotateX(${currentRX}deg) rotateY(${currentRY}deg)`;
+    rafId = requestAnimationFrame(animateTilt);
+  }
+  animateTilt();
+
+  card3d.addEventListener('mousemove', e => {
+    if (gyroActive) return;
+    const r = card3d.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width  - .5;
+    const y = (e.clientY - r.top)  / r.height - .5;
+    targetRY =  x * 16;
+    targetRX = -y * 12;
+    card3d.classList.add('tilting');
+    updateHolo(x, y);
+  });
+
+  card3d.addEventListener('mouseleave', () => {
+    if (gyroActive) return;
+    targetRX = 0;
+    targetRY = 0;
+    card3d.classList.remove('tilting');
+  });
+
+  /* ── touch tilt (mobile, if no gyro) ── */
+  card3d.addEventListener('touchmove', e => {
+    if (gyroActive) return;
+    const t = e.touches[0];
+    const r = card3d.getBoundingClientRect();
+    const x = (t.clientX - r.left) / r.width  - .5;
+    const y = (t.clientY - r.top)  / r.height - .5;
+    targetRY =  x * 14;
+    targetRX = -y * 10;
+    card3d.classList.add('tilting');
+    updateHolo(x, y);
+  }, { passive: true });
+
+  card3d.addEventListener('touchend', () => {
+    if (gyroActive) return;
+    targetRX = 0;
+    targetRY = 0;
+    card3d.classList.remove('tilting');
+  });
+
+  /* ══════════════════════════════════
+     GYROSCOPE (iOS / Android)
+  ══════════════════════════════════ */
+  function startGyro() {
+    window.addEventListener('deviceorientation', e => {
+      if (!gyroActive) return;
+      // beta: front-back tilt (-180..180), gamma: left-right (-90..90)
+      const beta  = Math.max(-30, Math.min(30, e.beta  - 45)); // offset resting angle
+      const gamma = Math.max(-30, Math.min(30, e.gamma));
+      targetRX = beta  * 0.4;
+      targetRY = gamma * 0.5;
+      card3d.classList.add('tilting');
+      updateHolo(gamma / 60, beta / 60);
+    });
+    gyroActive = true;
+    document.getElementById('gyroHint').classList.add('visible');
+  }
+
+  if (typeof DeviceOrientationEvent !== 'undefined') {
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      // iOS 13+ — request on first tap
+      document.addEventListener('pointerdown', function requestOnce() {
+        DeviceOrientationEvent.requestPermission()
+          .then(state => { if (state === 'granted') startGyro(); })
+          .catch(() => {});
+        document.removeEventListener('pointerdown', requestOnce);
+      }, { once: true });
+    } else {
+      // Android / older iOS
+      startGyro();
+    }
+  }
+
+  /* ══════════════════════════════════
+     HOLOGRAPHIC HIGHLIGHT POSITION
+  ══════════════════════════════════ */
+  function updateHolo(nx, ny) {
+    const holo = document.getElementById('holo');
+    // nx, ny in range -0.5..0.5
+    const px = (nx + 0.5) * 100;
+    const py = (ny + 0.5) * 100;
+    holo.style.background = `
+      radial-gradient(
+        ellipse 60% 40% at ${px}% ${py}%,
+        rgba(255,255,255,0.10) 0%,
+        rgba(124,106,247,0.18) 25%,
+        rgba(56,189,248,0.12) 50%,
+        rgba(240,98,146,0.10) 75%,
+        transparent 100%
+      )
+    `;
+    holo.style.opacity = '1';
+  }
+
+  /* ══════════════════════════════════
+     RIPPLE ON TAP
+  ══════════════════════════════════ */
   document.addEventListener('pointerdown', e => {
     const r = document.createElement('div');
     r.className = 'ripple';
@@ -465,7 +787,9 @@
     r.addEventListener('animationend', () => r.remove());
   });
 
-  /* ── toast helper ── */
+  /* ══════════════════════════════════
+     TOAST HELPER
+  ══════════════════════════════════ */
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -473,7 +797,9 @@
     setTimeout(() => t.classList.remove('show'), 2400);
   }
 
-  /* ── vCard / save contact ── */
+  /* ══════════════════════════════════
+     vCARD / SAVE CONTACT
+  ══════════════════════════════════ */
   function saveContact() {
     const vcard =
 `BEGIN:VCARD
@@ -499,18 +825,6 @@ END:VCARD`;
     URL.revokeObjectURL(url);
     showToast('✓ 連絡先を保存しました');
   }
-
-  /* ── tilt effect on card (desktop) ── */
-  const card = document.querySelector('.card');
-  card.addEventListener('mousemove', e => {
-    const r   = card.getBoundingClientRect();
-    const x   = (e.clientX - r.left) / r.width  - .5;
-    const y   = (e.clientY - r.top)  / r.height - .5;
-    card.style.transform = `perspective(600px) rotateY(${x * 8}deg) rotateX(${-y * 8}deg)`;
-  });
-  card.addEventListener('mouseleave', () => {
-    card.style.transform = '';
-  });
 </script>
 </body>
 </html>
